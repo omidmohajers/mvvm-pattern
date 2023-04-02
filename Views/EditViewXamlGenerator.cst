@@ -1,0 +1,409 @@
+﻿<%@ CodeTemplate Language="C#" TargetLanguage="C#" Description="Generates a very simple business object." %>
+<%@ Property Name="SourceTable" Type="SchemaExplorer.TableSchema" Category="Context" Description="Table that the object is based on." %>
+<%@ Property Name="NameSpace" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Property Name="Asembly" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Property Name="ProjectKeyName" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Property Name="ProjectName" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Assembly Name="System.Data" %>
+<%@ Import Namespace="SchemaExplorer" %>
+<%@ Import Namespace="System.Data" %>
+
+<dx:DXWindow
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dxlc="http://schemas.devexpress.com/winfx/2008/xaml/layoutcontrol"
+        xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+        xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
+        xmlns:dxb="http://schemas.devexpress.com/winfx/2008/xaml/bars"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+        xmlns:DateTimeUtils="clr-namespace:PA.PersianUtils.Wpf.DateTimeUtils;assembly=PA.PersianUtils.Wpf"
+        xmlns:Entities="clr-namespace:PA.WareHouse.Data.Entities;assembly=PA.<%= ProjectName %>.Data" 
+        xmlns:ComponentModel="clr-namespace:System.ComponentModel;assembly=WindowsBase" 
+        xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+        x:Class="<%= NameSpace %>.Edit<%= GetClassName(SourceTable) %>Window"
+        Title=""
+    FlowDirection="RightToLeft"
+    Height="700"
+    Width="800" 
+    Closed="DXRibbonWindow_Closed" 
+    x:Name="root" 
+    ResizeMode="CanResizeWithGrip">
+    <dx:DXWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="GridTemplates.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </dx:DXWindow.Resources>
+    <dx:DXWindow.WindowStartupLocation>
+        <WindowStartupLocation>CenterScreen</WindowStartupLocation>
+    </dx:DXWindow.WindowStartupLocation>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="70"/>
+        </Grid.RowDefinitions>
+        <Grid DataContext="{Binding <%= GetClassName(SourceTable) %>}" Margin="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <% foreach (ColumnSchema column in SourceTable.Columns) { %>
+        	        <RowDefinition Height="Auto"/>
+        		<% } %>	
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <% int RowID = 0; %>
+            <% foreach (ColumnSchema column in SourceTable.Columns) { %>
+        	        <Label Grid.Row="<%= RowID %>" Grid.Column="0" Content="<%= GetPropertyName(column) %>" Margin="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" />
+                    <%= GetEditorScript(column, RowID++) %>
+        		<% } 
+            RowID++; %>	
+        </Grid>
+        <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight" Background="#FFE6E5E5" Grid.Row="9" Grid.ColumnSpan="4" Margin="0">
+            <Button TabIndex="<%= RowID++ %>" Margin="10"  Padding="10,5,10,5" x:Name="okButton" Command="{Binding SaveCommand}">
+                <StackPanel Orientation="Horizontal" >
+                    <Label Content="{DynamicResource OKButtonLabel}"  />
+                    <Image Source="{dx:DXImageGrayscale Image=Apply_32x32.png}"/>
+                </StackPanel>
+            </Button>
+            <Button TabIndex="<%= RowID++ %>" Margin="10"  Padding="10,5,10,5" x:Name="cancelButton" Command="{Binding CloseCommand}">
+                <StackPanel Orientation="Horizontal" >
+                    <Label Content="{DynamicResource CancelButtonLabel}"  />
+                    <Image Source="{dx:DXImageGrayscale Image=Cancel_32x32.png}"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</dx:DXWindow>
+
+	
+<script runat="template">
+public string GetEditorScript(ColumnSchema column, int rowID)
+{
+    string res = "<dxe:TextEdit TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "TextBox\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" EditValue=\"{Binding " + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\" ValidateOnTextInput=\"True\"/>";    
+    
+    switch (column.DataType)
+	{
+        default:
+		case DbType.AnsiString: 
+		case DbType.AnsiStringFixedLength: 
+        case DbType.String: 
+        case DbType.StringFixedLength:
+        case DbType.Guid:
+            res = "<dxe:TextEdit TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "TextBox\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" EditValue=\"{Binding " + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\" ValidateOnTextInput=\"True\"/>";
+            break;
+		case DbType.Binary: 
+             res = "<dxe:ImageEdit TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "ImageEdit\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" EditValue=\"{Binding " + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\" Height = \"200\"/>";
+            break;
+		case DbType.Boolean:
+             res = "<dxe:CheckEdit Content=\"\" TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "CheckBox\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" IsChecked=\"{Binding " + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\"/>";
+            break;
+		case DbType.Byte: 
+		case DbType.Currency: 
+		case DbType.Decimal: 
+		case DbType.Double: 
+        case DbType.Int16: 
+		case DbType.Int32: 
+		case DbType.Int64:     
+        case DbType.SByte: 
+		case DbType.Single:    
+        case DbType.UInt16: 
+		case DbType.UInt32: 
+		case DbType.UInt64: 
+		case DbType.VarNumeric:
+            if(column.IsForeignKeyMember)
+            {
+                res = "<dxg:LookUpEdit TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "TextBox\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" EditValue=\"{Binding Path=" + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\" ItemsSource=\"{Binding " + GetPropertyName(column) + "sSource}\" ShowSizeGrip=\"True\" SelectedIndex=\"0\" AutoPopulateColumns=\"False\" IsPopupAutoWidth=\"False\" ValueMember=\"ID\" DisplayMember=\"Name\"  PopupContentTemplate=\"{DynamicResource popupTemplate}\" AllowNullInput=\"True\" ShowErrorToolTip=\"False\" ShowError=\"False\" SelectAllOnGotFocus=\"False\" IsTextEditable=\"False\" IsSynchronizedWithCurrentItem=\"True\" AutoComplete=\"True\" PopupFooterButtons=\"Close\" AllowItemHighlighting=\"False\" />";
+            }
+            else
+            {
+                res = "<dxe:TextEdit TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "TextBox\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" EditValue=\"{Binding " + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\" ValidateOnTextInput=\"True\" Mask=\"n0\" MaskType=\"Numeric\" MaskUseAsDisplayFormat=\"True\"/>";
+            }
+            break;
+		case DbType.Date: 
+		case DbType.DateTime: 
+        case DbType.Time: 
+            res = "<DateTimeUtils:PersianDatePicker TabIndex=\"" + rowID + "\" x:Name=\"" + GetPropertyName(column) + "TextBox\" Margin=\"10,10,10,0\" Grid.Row=\"" + rowID + "\" Grid.Column=\"1\" EnSelectedDate=\"{Binding " + GetPropertyName(column) + ", Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}\"  VerticalAlignment=\"Top\" />";
+		    break;		
+	}
+    return res;
+}
+public string GetMemberVariableDeclarationStatement(ColumnSchema column)
+{
+	return GetMemberVariableDeclarationStatement("protected", column);
+}
+
+public string GetMemberVariableDeclarationStatement(string protectionLevel, ColumnSchema column)
+{
+	string statement = protectionLevel + " ";
+	statement += GetCSharpVariableType(column) + " " + GetMemberVariableName(column);
+	
+	string defaultValue = GetMemberVariableDefaultValue(column);
+	if (defaultValue != "")
+	{
+		statement += " = " + defaultValue;
+	}
+	else if(SourceTable.ForeignKeyColumns.IndexOf(column) > -1 && GetCSharpVariableType(column)=="int")
+	{
+		statement += " = -1";
+	}
+	
+	statement += ";";
+	
+	return statement;
+}
+
+public string MyGetReaderAssignmentStatement(ColumnSchema column, int index)
+{
+	string statement = "if (!reader.IsDBNull(reader.GetOrdinal(\"" + column.Name + "\"))) ";
+	statement += "value."+GetPropertyName(column) + " = ";
+	
+	//if (column.Name.EndsWith("TypeCode")) statement += "(" + column.Name + ")";
+	
+	statement += "reader." + GetReaderMethod(column) + "(reader.GetOrdinal(\"" + column.Name + "\"));";
+	
+//	if(SourceTable.ForeignKeyColumns.IndexOf(column) > -1 && GetCSharpVariableType(column) == "int")
+//		statement += "  else value."+GetPropertyName(column) + " = -1;";
+	
+	return statement;
+}
+
+public string GetReaderAssignmentStatement(ColumnSchema column, int index)
+{
+	string statement = "if (!reader.IsDBNull(" + index.ToString() + ")) ";
+	statement += GetMemberVariableName(column) + " = ";
+	
+	if (column.Name.EndsWith("TypeCode")) statement += "(" + column.Name + ")";
+	
+	statement += "reader." + GetReaderMethod(column) + "(" + index.ToString() + ");";
+	
+	return statement;
+}
+
+public string GetCamelCaseName(string value)
+{
+	return value.Substring(0, 1).ToLower() + value.Substring(1);
+}
+
+public string GetMemberVariableName(ColumnSchema column)
+{
+	string propertyName = GetPropertyName(column);
+	string memberVariableName = "_" + GetCamelCaseName(propertyName);
+	
+	return memberVariableName;
+}
+
+public string GetPropertyName(ColumnSchema column)
+{
+	string propertyName = column.Name;
+	
+	//if (propertyName == column.Table.Name + "Name") return "Name";
+	//if (propertyName == column.Table.Name + "Description") return "Description";
+	
+	//if (propertyName.EndsWith("TypeCode")) propertyName = propertyName.Substring(0, propertyName.Length - 4);
+	
+	return propertyName;
+}
+		
+public string GetMemberVariableDefaultValue(ColumnSchema column)
+{
+	switch (column.DataType)
+	{
+		case DbType.Guid:
+		{
+			return "Guid.Empty";
+		}
+		case DbType.AnsiString:
+		case DbType.AnsiStringFixedLength:
+		case DbType.String:
+		case DbType.StringFixedLength:
+		{
+			return "String.Empty";
+		}
+		default:
+		{
+			return "";
+		}
+	}
+}
+
+public string GetCSharpVariableType(ColumnSchema column)
+{
+	if (column.Name.EndsWith("TypeCode")) return column.Name;
+	
+	switch (column.DataType)
+	{
+		case DbType.AnsiString: return "string";
+		case DbType.AnsiStringFixedLength: return "string";
+		case DbType.Binary: return "byte[]";
+		case DbType.Boolean: return "bool";
+		case DbType.Byte: return "byte";
+		case DbType.Currency: return "decimal";
+		case DbType.Date: return "DateTime";
+		case DbType.DateTime: return "DateTime";
+		case DbType.Decimal: return "decimal";
+		case DbType.Double: return "double";
+		case DbType.Guid: return "Guid";
+		case DbType.Int16: return "short";
+		case DbType.Int32: return "int";
+		case DbType.Int64: return "long";
+		case DbType.Object: return "object";
+		case DbType.SByte: return "sbyte";
+		case DbType.Single: return "float";
+		case DbType.String: return "string";
+		case DbType.StringFixedLength: return "string";
+		case DbType.Time: return "TimeSpan";
+		case DbType.UInt16: return "ushort";
+		case DbType.UInt32: return "uint";
+		case DbType.UInt64: return "ulong";
+		case DbType.VarNumeric: return "decimal";
+		default:
+		{
+			return "__UNKNOWN__" + column.NativeType;
+		}
+	}
+}
+
+public string GetReaderMethod(ColumnSchema column)
+{
+	switch (column.DataType)
+	{
+		case DbType.Byte:
+		{
+			return "GetByte";
+		}
+		case DbType.Int16:
+		{
+			return "GetInt16";
+		}
+		case DbType.Int32:
+		{
+			return "GetInt32";
+		}
+		case DbType.Int64:
+		{
+			return "GetInt64";
+		}
+		case DbType.AnsiStringFixedLength:
+		case DbType.AnsiString:
+		case DbType.String:
+		case DbType.StringFixedLength:
+		{
+			return "GetString";
+		}
+		case DbType.Boolean:
+		{
+			return "GetBoolean";
+		}
+		case DbType.Guid:
+		{
+			return "GetGuid";
+		}
+		case DbType.Currency:
+		case DbType.Decimal:
+		{
+			return "GetDecimal";
+		}
+		case DbType.DateTime:
+		case DbType.Date:
+		{
+			return "GetDateTime";
+		}
+		case DbType.Binary:
+		{
+			return "GetBytes";
+		}
+		case DbType.Double:
+		{
+			return "GetDouble";
+		}
+		default:
+		{
+			return "__SQL__" + column.DataType;
+		}
+	}
+}
+
+public string GetClassName(TableSchema table)
+{
+	string name = "";
+	if (table.Name.EndsWith("s"))
+	{
+		name= table.Name.Substring(0, table.Name.Length - 1);
+	}
+	else if (table.Name.EndsWith("ies"))
+	{
+		name= table.Name.Substring(0, table.Name.Length - 3)+"y";
+	}
+	else
+	{
+		name= table.Name;
+	}
+	if(name.StartsWith("PC_"))
+		name= name.Substring(3,name.Length-3);
+	return name;	
+}
+
+public string GetSqlDbType(ColumnSchema column)
+{
+	switch (column.NativeType)
+	{
+		case "bigint": return "BigInt";
+		case "binary": return "Binary";
+		case "bit": return "Bit";
+		case "char": return "Char";
+		case "datetime": return "DateTime";
+		case "decimal": return "Decimal";
+		case "float": return "Float";
+		case "image": return "Image";
+		case "int": return "Int";
+		case "money": return "Money";
+		case "nchar": return "NChar";
+		case "ntext": return "NText";
+		case "numeric": return "Decimal";
+		case "nvarchar": return "NVarChar";
+		case "real": return "Real";
+		case "smalldatetime": return "SmallDateTime";
+		case "smallint": return "SmallInt";
+		case "smallmoney": return "SmallMoney";
+		case "sql_variant": return "Variant";
+		case "sysname": return "NChar";
+		case "text": return "Text";
+		case "timestamp": return "Timestamp";
+		case "tinyint": return "TinyInt";
+		case "uniqueidentifier": return "UniqueIdentifier";
+		case "varbinary": return "VarBinary";
+		case "varchar": return "VarChar";
+		default: return "__UNKNOWN__" + column.NativeType;
+	}
+}
+
+public string GetPrimaryKeyType(TableSchema table)
+{
+	if (table.PrimaryKey != null)
+	{
+		if (table.PrimaryKey.MemberColumns.Count == 1)
+		{
+			return GetCSharpVariableType(table.PrimaryKey.MemberColumns[0]);
+		}
+		else
+		{
+			throw new ApplicationException("This template will not work on primary keys with more than one member column.");
+		}
+	}
+	else
+	{
+		throw new ApplicationException("This template will only work on tables with a primary key.");
+	}
+}
+
+public override string GetFileName()
+{
+	return this.GetClassName(this.SourceTable) + ".cs";
+}
+</script>

@@ -1,0 +1,517 @@
+﻿<%@ CodeTemplate Language="C#" TargetLanguage="C#" Description="Generates a very simple business object." %>
+<%@ Property Name="SourceTable" Type="SchemaExplorer.TableSchema" Category="Context" Description="Table that the object is based on." %>
+<%@ Property Name="NameSpace" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Property Name="Asembly" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Property Name="ProjectKeyName" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Property Name="ProjectName" Type="System.String" Category="Context" Description="nothing" %>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Assembly Name="System.Data" %>
+<%@ Import Namespace="SchemaExplorer" %>
+<%@ Import Namespace="System.Data" %>
+
+
+using DevExpress.Data;
+using DevExpress.Data.Filtering.Helpers;
+using DevExpress.Mvvm;
+using DevExpress.Mvvm.POCO;
+using DevExpress.Utils;
+using DevExpress.XtraGrid;
+using <%=ProjectName%>.ViewModels;
+using <%=ProjectName%>.Views;
+using <%=ProjectName%>.Codes;
+using PA.mvvm.Base;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Windows;
+
+namespace <%= NameSpace %>
+{
+    public class Grid<%= GetClassName(SourceTable) %>sModuleViewModel : GridViewModelBase< <%= GetClassName(SourceTable) %>Model>
+    {
+        public List< <%= GetClassName(SourceTable) %>Model> <%= GetClassName(SourceTable) %>s { get; set; }
+
+        public virtual <%= GetClassName(SourceTable) %>Model Selected<%= GetClassName(SourceTable) %> { get; set; }
+        public void ShowNew<%= GetClassName(SourceTable) %>Window()
+        {
+            ShowEdit<%= GetClassName(SourceTable) %>WindowCore(new <%= GetClassName(SourceTable) %>Model(), true);
+        }
+
+        protected override void InitializeDefaultView()
+        {
+            SetListView();
+            CheckedItemType = <%= GetClassName(SourceTable) %>ItemType.TodayItem;
+        }
+
+        protected override List< <%= GetClassName(SourceTable) %>Model> GetItemsSource()
+        {
+            return <%= GetClassName(SourceTable) %>s;
+        }
+
+        protected virtual INotificationService NotificationService { get { return null; } }
+
+        ObservableCollection< <%= GetClassName(SourceTable) %>Model> All<%= GetClassName(SourceTable) %>s;
+        void Initialize<%= GetClassName(SourceTable) %>s()
+        {
+            All<%= GetClassName(SourceTable) %>s = new ObservableCollection<<%= GetClassName(SourceTable) %>Model>(<%= GetClassName(SourceTable) %>Model.ListAll());
+            <%= GetClassName(SourceTable) %>s = new List< <%= GetClassName(SourceTable) %>Model>();
+            <%= GetClassName(SourceTable) %>s.AddRange(All<%= GetClassName(SourceTable) %>s);
+            if(<%= GetClassName(SourceTable) %>s.Count > 0)
+                Selected<%= GetClassName(SourceTable) %> = <%= GetClassName(SourceTable) %>s[0];
+        }
+        protected override void InitializeData()
+        {
+            Initialize<%= GetClassName(SourceTable) %>s();
+        }
+        void Update<%= GetClassName(SourceTable) %>s()
+        {
+            InitializeItemsSource();
+        }
+        protected override List<GridColumnModel> GetColumns()
+        {
+            List<GridColumnModel> result = new List<GridColumnModel>();
+            
+            <% foreach (ColumnSchema column in SourceTable.Columns) { %>
+                result.Add(new GridColumnModel() { Name = "<%= GetPropertyName(column) %>",DisplayName = "<%= GetPropertyName(column) %>", Width = 100, HorizontalHeaderContentAlignment = System.Windows.HorizontalAlignment.Center, AllowFiltering = DefaultBoolean.False, AllowSorting = DefaultBoolean.False });
+            <% } %>
+            return result;
+        }
+        public override void ShowNewItemWindow() { ShowNew<%= GetClassName(SourceTable) %>Window(); }
+
+        void model_Closed(object sender, EventArgs e)
+        {
+            Edit<%= GetClassName(SourceTable) %>ViewModel model = (Edit<%= GetClassName(SourceTable) %>ViewModel)sender;
+            model.Closed -= model_Closed;
+            if (edit<%= GetClassName(SourceTable) %>Window != null) edit<%= GetClassName(SourceTable) %>Window.Close();
+            edit<%= GetClassName(SourceTable) %>Window = null;
+            if (!model.Result)
+                return;
+            if (!model.IsNew)
+            {
+                SelectedItem.Assign(model.<%= GetClassName(SourceTable) %>);
+                WarehouseManager.<%= GetClassName(SourceTable) %>Action.Update(SelectedItem.<%= GetClassName(SourceTable) %>);
+                NotificationService.CreatePredefinedNotification("اطلاعات تغییر یافت", model.<%= GetClassName(SourceTable) %>.Name, "").ShowAsync();
+                InitializeData();
+            }
+            else
+            {
+                WarehouseManager.<%= GetClassName(SourceTable) %>Action.Insert(model.<%= GetClassName(SourceTable) %>.<%= GetClassName(SourceTable) %>);
+                BeginUpdate();
+                <%= GetClassName(SourceTable) %>s.Add(model.<%= GetClassName(SourceTable) %>);
+                Update<%= GetClassName(SourceTable) %>s();
+                SelectedItem = model.<%= GetClassName(SourceTable) %>;
+                EndUpdate();
+                NotificationService.CreatePredefinedNotification("آیتم جدید ایجاد گردید", model.<%= GetClassName(SourceTable) %>.Name, "").ShowAsync();
+            }
+        }
+        public void ShowEdit<%= GetClassName(SourceTable) %>Window()
+        {
+            if (SelectedItem == null)
+                return;
+            ShowEdit<%= GetClassName(SourceTable) %>WindowCore(SelectedItem.Clone(), false);
+        }
+
+        Edit<%= GetClassName(SourceTable) %>Window edit<%= GetClassName(SourceTable) %>Window;
+        private string <%= GetClassName(SourceTable) %>TypeStateString;
+        private string completeStateString;
+        void ShowEdit<%= GetClassName(SourceTable) %>WindowCore(<%= GetClassName(SourceTable) %>Model <%= GetClassName(SourceTable) %>, bool isNew)
+        {
+            Edit<%= GetClassName(SourceTable) %>ViewModel model = ViewModelSource.Create(() => new Edit<%= GetClassName(SourceTable) %>ViewModel(<%= GetClassName(SourceTable) %>, isNew));
+            model.Closed += model_Closed;
+            edit<%= GetClassName(SourceTable) %>Window = new Edit<%= GetClassName(SourceTable) %>Window();
+            edit<%= GetClassName(SourceTable) %>Window.DataContext = model;
+            edit<%= GetClassName(SourceTable) %>Window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            edit<%= GetClassName(SourceTable) %>Window.WindowState = WindowState.Normal;
+            edit<%= GetClassName(SourceTable) %>Window.ShowDialog();
+        }
+
+        public void Delete<%= GetClassName(SourceTable) %>()
+        {
+            <%= ProjectKeyName%>Manager.<%= GetClassName(SourceTable) %>Action.Delete(SelectedItem.<%= GetClassName(SourceTable) %>);
+            NotificationService.CreatePredefinedNotification("آیتم حذف شد", SelectedItem.<%= GetClassName(SourceTable) %>.ID.ToString(), "").ShowAsync();
+            All<%= GetClassName(SourceTable) %>s.Remove(SelectedItem);
+            Update<%= GetClassName(SourceTable) %>s();
+        }
+
+
+        public void SetListView()
+        {
+            ClearModel();
+            BeginUpdate();
+            FilterString = "";
+            SortBy("ID", ColumnSortOrder.Descending);
+            EndUpdate();
+        }
+    }
+    
+    public class Edit<%= GetClassName(SourceTable) %>ViewModel : BindableBase, IDataErrorInfo
+    {
+        private bool allowValidation = false;
+        public DelegateCommand SaveCommand { get; private set; }
+        public DelegateCommand ExitCommand { get; private set; }
+
+        public Edit<%= GetClassName(SourceTable) %>ViewModel(<%= GetClassName(SourceTable) %>Model instance, bool isNew) : this()
+        {
+            this.<%= GetClassName(SourceTable) %> = instance;
+            this.IsNew = isNew;
+        }
+
+        public Edit<%= GetClassName(SourceTable) %>ViewModel()
+        {
+            SaveCommand = new DelegateCommand(Save, true);
+            ExitCommand = new DelegateCommand(Close, true);
+        }
+
+        public bool IsNew { get; private set; }
+        public bool IsUpdate
+        {
+            get
+            {
+                return !IsNew;
+            }
+        }
+        public <%= GetClassName(SourceTable) %>Model <%= GetClassName(SourceTable) %> { get; private set; }
+        public virtual bool Result { get; set; }
+        
+        <% foreach (ColumnSchema column in SourceTable.Columns) { %>
+                public <%= GetCSharpVariableType(column) %> <%= GetPropertyName(column) %>
+                {
+                    get
+                    {
+                        return <%= GetClassName(SourceTable) %>.<%= GetPropertyName(column) %>;
+                    }
+                    set
+                    {
+                        <%= GetClassName(SourceTable) %>.<%= GetPropertyName(column) %> = value;
+                        RaisePropertiesChanged("<%= GetPropertyName(column) %>");
+                    }
+                }        
+        <% } %>
+        
+        string EnableValidationAndGetError()
+        {
+            allowValidation = true;
+            string error = ((IDataErrorInfo)this).Error;
+            if (!string.IsNullOrEmpty(error))
+            {
+                this.RaisePropertiesChanged();
+                return error;
+            }
+            return null;
+        }
+        string IDataErrorInfo.Error
+        {
+            get
+            {
+                if (!allowValidation) return null;
+                string error = null;
+               
+                return error;
+            }
+        }
+        string IDataErrorInfo.this[string columnName]
+        {
+            get
+            {
+                if (!allowValidation) return null;
+                string error = null;
+                return error;
+            }
+        }
+
+        public event EventHandler Closed;
+        public void Save()
+        {
+            string error = EnableValidationAndGetError();
+            if (string.IsNullOrWhiteSpace(error))
+            {
+                Result = true;
+                Close();
+            }
+            allowValidation = false;
+
+        }
+        public void Close()
+        {
+            Closed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+}
+	
+<script runat="template">
+public string GetMemberVariableDeclarationStatement(ColumnSchema column)
+{
+	return GetMemberVariableDeclarationStatement("protected", column);
+}
+
+public string GetMemberVariableDeclarationStatement(string protectionLevel, ColumnSchema column)
+{
+	string statement = protectionLevel + " ";
+	statement += GetCSharpVariableType(column) + " " + GetMemberVariableName(column);
+	
+	string defaultValue = GetMemberVariableDefaultValue(column);
+	if (defaultValue != "")
+	{
+		statement += " = " + defaultValue;
+	}
+	else if(SourceTable.ForeignKeyColumns.IndexOf(column) > -1 && GetCSharpVariableType(column)=="int")
+	{
+		statement += " = -1";
+	}
+	
+	statement += ";";
+	
+	return statement;
+}
+
+public string MyGetReaderAssignmentStatement(ColumnSchema column, int index)
+{
+	string statement = "if (!reader.IsDBNull(reader.GetOrdinal(\"" + column.Name + "\"))) ";
+	statement += "value."+GetPropertyName(column) + " = ";
+	
+	//if (column.Name.EndsWith("TypeCode")) statement += "(" + column.Name + ")";
+	
+	statement += "reader." + GetReaderMethod(column) + "(reader.GetOrdinal(\"" + column.Name + "\"));";
+	
+//	if(SourceTable.ForeignKeyColumns.IndexOf(column) > -1 && GetCSharpVariableType(column) == "int")
+//		statement += "  else value."+GetPropertyName(column) + " = -1;";
+	
+	return statement;
+}
+
+public string GetReaderAssignmentStatement(ColumnSchema column, int index)
+{
+	string statement = "if (!reader.IsDBNull(" + index.ToString() + ")) ";
+	statement += GetMemberVariableName(column) + " = ";
+	
+	if (column.Name.EndsWith("TypeCode")) statement += "(" + column.Name + ")";
+	
+	statement += "reader." + GetReaderMethod(column) + "(" + index.ToString() + ");";
+	
+	return statement;
+}
+
+public string GetCamelCaseName(string value)
+{
+	return value.Substring(0, 1).ToLower() + value.Substring(1);
+}
+
+public string GetMemberVariableName(ColumnSchema column)
+{
+	string propertyName = GetPropertyName(column);
+	string memberVariableName = "_" + GetCamelCaseName(propertyName);
+	
+	return memberVariableName;
+}
+
+public string GetPropertyName(ColumnSchema column)
+{
+	string propertyName = column.Name;
+	
+	//if (propertyName == column.Table.Name + "Name") return "Name";
+	//if (propertyName == column.Table.Name + "Description") return "Description";
+	
+	//if (propertyName.EndsWith("TypeCode")) propertyName = propertyName.Substring(0, propertyName.Length - 4);
+	
+	return propertyName;
+}
+		
+public string GetMemberVariableDefaultValue(ColumnSchema column)
+{
+	switch (column.DataType)
+	{
+		case DbType.Guid:
+		{
+			return "Guid.Empty";
+		}
+		case DbType.AnsiString:
+		case DbType.AnsiStringFixedLength:
+		case DbType.String:
+		case DbType.StringFixedLength:
+		{
+			return "String.Empty";
+		}
+		default:
+		{
+			return "";
+		}
+	}
+}
+
+public string GetCSharpVariableType(ColumnSchema column)
+{
+	if (column.Name.EndsWith("TypeCode")) return column.Name;
+	
+	switch (column.DataType)
+	{
+		case DbType.AnsiString: return "string";
+		case DbType.AnsiStringFixedLength: return "string";
+		case DbType.Binary: return "byte[]";
+		case DbType.Boolean: return "bool";
+		case DbType.Byte: return "byte";
+		case DbType.Currency: return "decimal";
+		case DbType.Date: return "DateTime";
+		case DbType.DateTime: return "DateTime";
+		case DbType.Decimal: return "decimal";
+		case DbType.Double: return "double";
+		case DbType.Guid: return "Guid";
+		case DbType.Int16: return "short";
+		case DbType.Int32: return "int";
+		case DbType.Int64: return "long";
+		case DbType.Object: return "object";
+		case DbType.SByte: return "sbyte";
+		case DbType.Single: return "float";
+		case DbType.String: return "string";
+		case DbType.StringFixedLength: return "string";
+		case DbType.Time: return "TimeSpan";
+		case DbType.UInt16: return "ushort";
+		case DbType.UInt32: return "uint";
+		case DbType.UInt64: return "ulong";
+		case DbType.VarNumeric: return "decimal";
+		default:
+		{
+			return "__UNKNOWN__" + column.NativeType;
+		}
+	}
+}
+
+public string GetReaderMethod(ColumnSchema column)
+{
+	switch (column.DataType)
+	{
+		case DbType.Byte:
+		{
+			return "GetByte";
+		}
+		case DbType.Int16:
+		{
+			return "GetInt16";
+		}
+		case DbType.Int32:
+		{
+			return "GetInt32";
+		}
+		case DbType.Int64:
+		{
+			return "GetInt64";
+		}
+		case DbType.AnsiStringFixedLength:
+		case DbType.AnsiString:
+		case DbType.String:
+		case DbType.StringFixedLength:
+		{
+			return "GetString";
+		}
+		case DbType.Boolean:
+		{
+			return "GetBoolean";
+		}
+		case DbType.Guid:
+		{
+			return "GetGuid";
+		}
+		case DbType.Currency:
+		case DbType.Decimal:
+		{
+			return "GetDecimal";
+		}
+		case DbType.DateTime:
+		case DbType.Date:
+		{
+			return "GetDateTime";
+		}
+		case DbType.Binary:
+		{
+			return "GetBytes";
+		}
+		case DbType.Double:
+		{
+			return "GetDouble";
+		}
+		default:
+		{
+			return "__SQL__" + column.DataType;
+		}
+	}
+}
+
+public string GetClassName(TableSchema table)
+{
+	string name = "";
+	if (table.Name.EndsWith("s"))
+	{
+		name= table.Name.Substring(0, table.Name.Length - 1);
+	}
+	else if (table.Name.EndsWith("ies"))
+	{
+		name= table.Name.Substring(0, table.Name.Length - 3)+"y";
+	}
+	else
+	{
+		name= table.Name;
+	}
+	if(name.StartsWith("PC_"))
+		name= name.Substring(3,name.Length-3);
+	return name;	
+}
+
+public string GetSqlDbType(ColumnSchema column)
+{
+	switch (column.NativeType)
+	{
+		case "bigint": return "BigInt";
+		case "binary": return "Binary";
+		case "bit": return "Bit";
+		case "char": return "Char";
+		case "datetime": return "DateTime";
+		case "decimal": return "Decimal";
+		case "float": return "Float";
+		case "image": return "Image";
+		case "int": return "Int";
+		case "money": return "Money";
+		case "nchar": return "NChar";
+		case "ntext": return "NText";
+		case "numeric": return "Decimal";
+		case "nvarchar": return "NVarChar";
+		case "real": return "Real";
+		case "smalldatetime": return "SmallDateTime";
+		case "smallint": return "SmallInt";
+		case "smallmoney": return "SmallMoney";
+		case "sql_variant": return "Variant";
+		case "sysname": return "NChar";
+		case "text": return "Text";
+		case "timestamp": return "Timestamp";
+		case "tinyint": return "TinyInt";
+		case "uniqueidentifier": return "UniqueIdentifier";
+		case "varbinary": return "VarBinary";
+		case "varchar": return "VarChar";
+		default: return "__UNKNOWN__" + column.NativeType;
+	}
+}
+
+public string GetPrimaryKeyType(TableSchema table)
+{
+	if (table.PrimaryKey != null)
+	{
+		if (table.PrimaryKey.MemberColumns.Count == 1)
+		{
+			return GetCSharpVariableType(table.PrimaryKey.MemberColumns[0]);
+		}
+		else
+		{
+			throw new ApplicationException("This template will not work on primary keys with more than one member column.");
+		}
+	}
+	else
+	{
+		throw new ApplicationException("This template will only work on tables with a primary key.");
+	}
+}
+
+public override string GetFileName()
+{
+	return this.GetClassName(this.SourceTable) + ".cs";
+}
+</script>

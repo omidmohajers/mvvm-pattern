@@ -1,0 +1,25 @@
+﻿<%-- 
+Name:
+Author: 
+Description: 
+--%>
+<%@ CodeTemplate Language="C#" TargetLanguage="Text" Description="easy way to create mvvm wpf project" CompilerVersion="v3.5" %>
+<%@ Assembly Name="System" %>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Assembly Name="CodeSmith.Engine" %>
+<%@ Import Namespace="System.IO" %>
+<%@ Register Name="EntityObj" Template="EntityObjectGenerator.cst" %>
+
+<%@ Property Category="1.Database" Name="SourceDatabase" Optional="False"
+    Type="SchemaExplorer.DatabaseSchema" 
+    Description="دیتابیسی که می خواهید پروژه شما از طریق آن ساخته شود انتخاب کنید" %>
+    
+<% foreach(TableSchema tbl in SourceDatabase.Tables){    
+   EntityObj obj = this.Create<EntityObj>(); 
+    obj.Asembly = "";
+    obj.SourceTable = tbl;
+    obj.NameSpace = "Entities";
+    obj.RenderToFile("",true);
+} %>
+
+

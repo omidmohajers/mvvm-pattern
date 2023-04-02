@@ -1,0 +1,305 @@
+﻿<%-- 
+Name: Start
+Author: Omid Mohajer
+Description: easy way to create mvvm wpf project
+--%>
+<%@ CodeTemplate Language="C#" TargetLanguage="Text" Description="easy way to create mvvm wpf project" CompilerVersion="v3.5" %>
+<%@ Assembly Name="System" %>
+<%@ Assembly Name="QuickStartUtils" Path="Common"%>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Assembly Name="CodeSmith.Engine" %>
+<%@ Import Namespace="System.IO" %>
+<%@ Import Namespace="QuickStartUtils" %>
+<%@ Register Name="QuickStartSolution" Template="Common\QuickStartSolution.cst" %>
+<%@ Register Name="EntityObj" Template="Data\EntityObjectGenerator.cst" %>
+<%@ Register Name="ModelObj" Template="Model\ModelGenerator.cst" %>
+<%@ Register Name="ActionObj" Template="Model\ActionGenerator.cst" %>
+<%@ Register Name="ViewModelObj" Template="ViewModel\ViewModelGenerator.cst" %>
+<%@ Register Name="GridViewXamlObj" Template="Views\GridViewXamlGenerator.cst" %>
+<%@ Register Name="GridViewCsObj" Template="Views\GridViewCsGenerator.cst" %>
+<%@ Register Name="EditViewXamlObj" Template="Views\EditViewXamlGenerator.cst" %>
+<%@ Register Name="EditViewCsObj" Template="Views\EditViewCsGenerator.cst" %>
+
+
+
+<%@ Property Category="1.Database" Name="SourceDatabase" Optional="False"
+    Type="SchemaExplorer.DatabaseSchema" 
+    Description="دیتابیسی که می خواهید پروژه شما از طریق آن ساخته شود انتخاب کنید" %>
+<%@ Property Name="Location" Type="System.String"
+    Default="Warehouse" Optional="False" Category="2.Solution"
+    Description="مسیری که برنامه در آن ساخته می شود"
+    Editor="System.Windows.Forms.Design.FolderNameEditor, System.Design, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" %>
+<%@ Property Name="SolutionName" Type="System.String"
+    Default="" Optional="False" Category="2.Solution"
+    Description="نام برنامه ای که ساخته می شود" %>
+<%@ Property Name="Language" Type="LanguageEnum"
+    Default="CSharp" Optional="False" Category="2.Solution"
+    Description="زبان برنامه" %>
+<%@ Property Name="Framework" Type="FrameworkVersion"
+    Default="v45" Optional="False" Category="2.Solution"
+    Description="ورژن دات نت فریم ورک مدنظر خود را انتخاب کنید" %>
+<%@ Property Name="LaunchVisualStudio" Type="System.Boolean"
+    Default="True" Optional="False" Category="2.Solution"
+    Description="بعد از ساخت برنامه ویژوال استادیو باز شود" %>
+<%@ Property Name="DataProjectName" Type="System.String"
+    Default="" Optional="False" Category="3.Data Project"
+    Description="عنوان پروژه مرتبط با دیتابیس" %>
+<%@ Property Name="DataContextName" Type="System.String"
+    Default="" Optional="True" Category="3.Data Project"
+    Description="Name Space for the Data Project." %>
+<%@ Property Name="ProjectName" Type="System.String"
+    Default="" Optional="False" Category="4.Wpf Project"
+    Description="نام پروژه" %>
+<%@ Property Name="ProjectKeyName" Type="System.String"
+    Default="" Optional="False" Category="4.Wpf Project"
+    Description="عنوان لاتین پروژه - بدون فاصله بنویسید" %>
+
+
+<% CreateQuickStart(); %>
+The <%= SolutionName %> Solution has been created at <%= Location %>.
+
+<script runat="template">
+
+    public void CreateQuickStart()
+    {
+        // Make sure Location is FullPath
+        Location = Path.GetFullPath(Location);
+
+        // Check For Existing Project
+        if(DirectoriesAlreadyExists)
+            throw new System.ApplicationException(AlreadyExistsMessage);
+
+        // Prep Directories
+        if(!Directory.Exists(Location))
+            Directory.CreateDirectory(Location);
+
+        // Data
+        string dataDir = Path.Combine( Location , "Entities");
+        if(!Directory.Exists(dataDir))
+            Directory.CreateDirectory(dataDir);
+        
+        CreateEntitiesFromTables(dataDir);
+        
+        // Model
+        string modelDir = Path.Combine( Location , "Models");
+        if(!Directory.Exists(modelDir))
+            Directory.CreateDirectory(modelDir);
+        
+        CreateModelsFromTables(modelDir);
+        
+        // ViewModel
+        string viewModelDir = Path.Combine( Location , "ViewModels");
+        if(!Directory.Exists(viewModelDir))
+            Directory.CreateDirectory(viewModelDir);
+        
+        CreateViewModelsFromTables(viewModelDir);
+        
+        // Views
+        string viewDir = Path.Combine( Location , "Views");
+        if(!Directory.Exists(viewDir))
+            Directory.CreateDirectory(viewDir);
+        
+        CreateViewsFromTables(viewDir);
+        
+        string actionDir = Path.Combine( Location , "Actions");
+        if(!Directory.Exists(actionDir))
+            Directory.CreateDirectory(actionDir);
+        
+        CreateActionsFromTables(actionDir);
+        
+//        List<SolutionItem> solutionItems = new List<SolutionItem>();
+//        ProjectBuilderSettings pbs = CreateProjectBuilderSettings();
+//
+//        // Create Data Project
+//        DataProjectCreator dataProjectCreator = new DataProjectCreator(pbs);
+//        dataProjectCreator.CreateProject(this.DataProjectName);
+//        solutionItems.Add(dataProjectCreator.SolutionItem);
+//
+//        // Create UI Project
+//
+//        // Create Solution
+//        string solutionPath = CreateSolution(solutionItems);
+//
+//        // Launch Visual Studio
+//        if(LaunchVisualStudio)
+//            LaunchVisualStudioWithSolution(solutionPath);
+    }
+    
+        private void CreateEntitiesFromTables(string dir){
+         foreach(TableSchema tbl in SourceDatabase.Tables){    
+            EntityObj obj = this.Create<EntityObj>(); 
+            obj.Asembly = DataProjectName + ".dll";
+            obj.SourceTable = tbl;
+            obj.NameSpace = DataProjectName + ".Entities";
+            obj.RenderToFile(Path.Combine( dir , GetClassName(tbl) + ".cs"),true);
+         }
+        }
+
+        private void CreateModelsFromTables(string dir){
+         foreach(TableSchema tbl in SourceDatabase.Tables){    
+            ModelObj obj = this.Create<ModelObj>(); 
+            obj.Asembly = ProjectName + ".dll";
+            obj.SourceTable = tbl;
+            obj.NameSpace = ProjectName + ".Models";
+            obj.ProjectKeyName = ProjectKeyName;
+             
+            obj.RenderToFile(Path.Combine( dir , GetClassName(tbl) + "Model.cs"),true);
+         }
+        }
+        
+        private void CreateActionsFromTables(string dir){
+         foreach(TableSchema tbl in SourceDatabase.Tables){    
+            ActionObj obj = this.Create<ActionObj>(); 
+            obj.Asembly = ProjectName + ".dll";
+            obj.SourceTable = tbl;
+            obj.NameSpace = ProjectName + ".Actions";
+            obj.ProjectKeyName = ProjectKeyName;
+             
+            obj.RenderToFile(Path.Combine( dir , GetClassName(tbl) + "Action.cs"),true);
+         }
+        }
+        
+         private void CreateViewModelsFromTables(string dir){
+         foreach(TableSchema tbl in SourceDatabase.Tables){    
+            ViewModelObj obj = this.Create<ViewModelObj>(); 
+            obj.Asembly = ProjectName + ".dll";
+            obj.SourceTable = tbl;
+            obj.NameSpace = ProjectName + ".ViewModels";
+            obj.ProjectKeyName = ProjectKeyName;
+             obj.ProjectName = ProjectName;
+            obj.RenderToFile(Path.Combine( dir , GetClassName(tbl) + "ViewModel.cs"),true);
+         }
+        }
+
+         private void CreateViewsFromTables(string dir){
+         foreach(TableSchema tbl in SourceDatabase.Tables){    
+             
+            GridViewXamlObj gxobj = this.Create<GridViewXamlObj>(); 
+            gxobj.Asembly = ProjectName + ".dll";
+            gxobj.SourceTable = tbl;
+            gxobj.NameSpace = ProjectName + ".Views";
+            gxobj.ProjectKeyName = ProjectKeyName;
+            gxobj.ProjectName = ProjectName;
+            gxobj.RenderToFile(Path.Combine( dir , "Grid" + tbl.Name + "View.xaml"),true);
+             
+            GridViewCsObj gcobj = this.Create<GridViewCsObj>(); 
+            gcobj.Asembly = ProjectName + ".dll";
+            gcobj.SourceTable = tbl;
+            gcobj.NameSpace = ProjectName + ".Views";
+            gcobj.ProjectKeyName = ProjectKeyName;
+            gcobj.RenderToFile(Path.Combine( dir , "Grid" + tbl.Name + "View.xaml.cs"),true);
+             
+            EditViewXamlObj exobj = this.Create<EditViewXamlObj>(); 
+            exobj.Asembly = ProjectName + ".dll";
+            exobj.SourceTable = tbl;
+            exobj.NameSpace = ProjectName + ".Views";
+            exobj.ProjectKeyName = ProjectKeyName;
+            exobj.ProjectName = ProjectName;
+            exobj.RenderToFile(Path.Combine( dir , "Edit" + GetClassName(tbl) + "View.xaml"),true);
+             
+            EditViewCsObj ecobj = this.Create<EditViewCsObj>(); 
+            ecobj.Asembly = ProjectName + ".dll";
+            ecobj.SourceTable = tbl;
+            ecobj.NameSpace = ProjectName + ".Views";
+            ecobj.ProjectKeyName = ProjectKeyName;
+             ecobj.ProjectName = ProjectName;
+            ecobj.RenderToFile(Path.Combine( dir , "Edit" + GetClassName(tbl) + "View.xaml.cs"),true);
+         }
+        }
+
+         public string GetClassName(TableSchema table)
+            {
+            	string name = "";
+            	if (table.Name.EndsWith("s"))
+            	{
+            		name= table.Name.Substring(0, table.Name.Length - 1);
+            	}
+            	else if (table.Name.EndsWith("ies"))
+            	{
+            		name= table.Name.Substring(0, table.Name.Length - 3)+"y";
+            	}
+            	else
+            	{
+            		name= table.Name;
+            	}
+            	if(name.StartsWith("PC_"))
+            		name= name.Substring(3,name.Length-3);
+            	return name;	
+            }
+
+    private bool DirectoriesAlreadyExists
+    {
+        get
+        {
+            return (Directory.Exists(Path.Combine(Location, this.DataProjectName))
+            || File.Exists(Path.Combine(Location, String.Concat(this.SolutionName, ".sln"))));
+        }
+    }
+    private string AlreadyExistsMessage
+    {
+        get
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.AppendLine("It seems that a quick start already exists in specified directory:");
+            sb.AppendLine(Location);
+            sb.AppendLine("Please delete existing data or selected a different directory.");
+            return sb.ToString();
+        }
+    }
+
+    private ProjectBuilderSettings CreateProjectBuilderSettings()
+    {
+        return new ProjectBuilderSettings()
+        {
+            SourceDatabase = this.SourceDatabase,
+            FrameworkVersion = this.Framework,
+            Language = this.Language,
+            Location = this.Location,
+            SolutionName = this.SolutionName,
+            DataContextName = this.DataContextName,
+            DataProjectName = this.DataProjectName
+        };
+    }
+    private string CreateSolution(List<SolutionItem> solutionItems)
+    {
+        QuickStartSolution quickStartSolution = this.Create<QuickStartSolution>();
+        quickStartSolution.SolutionItems = solutionItems;
+        quickStartSolution.Framework = this.Framework;
+        quickStartSolution.Location = this.Location;
+
+        string filePathAboslute = Path.Combine(Location, String.Concat(SolutionName, ".sln"));
+        quickStartSolution.RenderToFile(filePathAboslute, true);
+
+        return filePathAboslute;
+    }
+    
+    
+    private void LaunchVisualStudioWithSolution(string solutionLink)
+    {
+        string args = "/build debug";
+        using (Process p = Process.Start(solutionLink, args)) { }
+    }
+
+    private void OnSourceDatabaseChanged(object sender, EventArgs e)
+    {
+        if (SourceDatabase == null)
+            return;
+
+        string name = StringUtil.ToPascalCase(SourceDatabase.Database.Name);
+
+        if(string.IsNullOrEmpty(SolutionName))
+            SolutionName = name;
+
+        if (string.IsNullOrEmpty(DataProjectName))
+            DataProjectName = name + ".Data";
+
+        if (string.IsNullOrEmpty(DataContextName))
+            DataContextName = name + "DataContext";
+
+        if (string.IsNullOrEmpty(Location))
+            Location = Path.Combine(
+                CodeSmith.Engine.Configuration.Instance.CodeSmithTemplatesDirectory,
+                Path.Combine("MVVM", name));
+    }
+</script>
+
